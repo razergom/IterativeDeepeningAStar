@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include "Utils.h"
 
+#define REPEATING_NUMBER 1
+#define NOT_ENOUGH_ELEMS 2
+
 int num;
 
 enum Directions {
@@ -16,29 +19,15 @@ enum Directions {
     BOTTOM,
 };
 
-int equal(grid_t *g1, grid_t *g2, int n) {
-    /*
-     * Возвращает 1, если сетки g1 и g2 размера
-     * n * n равны, иначе - 0
-     */
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            if ((*g1)[i][j] != (*g2)[i][j]) {
-                return 0;
-            }
-        }
-    }
-    return 1;
-}
 
-void gridcpy(grid_t *g1, grid_t *g2, int n) {
+void gridcpy(grid_t g1, grid_t g2, int n) {
     /*
-     * Копирует сетку по указателю g2 в g1, обе сетки
+     * Копирует сетку g2 в g1, обе сетки
      * размера n * n
      */
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            (*g1)[i][j] = (*g2)[i][j];
+            g1[i][j] = g2[i][j];
         }
     }
 }
@@ -46,7 +35,7 @@ void gridcpy(grid_t *g1, grid_t *g2, int n) {
 int safe(Grid *puzzle, int n, int move) {
     /*
      * Возвращает 1, если ход move в
-     * сетке размера n * n по указателю gr безопасный
+     * сетке gr размера n * n безопасный
      * (не выходит за границы сетки),
      * иначе - 0
      */
@@ -64,36 +53,35 @@ int safe(Grid *puzzle, int n, int move) {
     }
 }
 
-void output_grid(grid_t *gr, int n) {
+void output_grid(grid_t gr, int n) {
     /*
-     * Вывод сетки размера n * n по
-     * указателю gr
+     * Вывод сетки gr размера n * n
      */
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (!(*gr)[i][j]) {
+            if (!gr[i][j]) {
                 printf("-- ");
                 continue;
             }
-            printf("%02d ", (*gr)[i][j]);
+            printf("%02d ", gr[i][j]);
         }
         printf("\n");
     }
     printf("\n");
 }
 
-int calculate_manhattan_distance(grid_t *gr, int n) {
+int calculate_manhattan_distance(grid_t gr, int n) {
     /*
      * Возвращает дистанциюю Мэнхэттэна для
-     * сетки размера n * n по указателю gr. (Сумма расстояний
+     * сетки gr размера n * n. (Сумма расстояний
      * каждой ячейки (каждого элемента) сетки до своей позиции)
      */
     int res = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if ((*gr)[i][j]) {
-                int targetx = ((*gr)[i][j] - 1) / n;
-                int targety = ((*gr)[i][j] - 1) % n;
+            if (gr[i][j]) {
+                int targetx = (gr[i][j] - 1) / n;
+                int targety = (gr[i][j] - 1) % n;
                 int dx = i - targetx;
                 int dy = j - targety;
                 res += abs(dx) + abs(dy);
@@ -103,24 +91,19 @@ int calculate_manhattan_distance(grid_t *gr, int n) {
     return res;
 }
 
-/*int heuristic(grid_t *gr, int n) {
-    int h1 = calculate_manhattan_distance(gr, n);
-    int h2 = calculate_linear_conflict(gr, n);
-    return h1 + h2;
-}*/
 
-Coordinate search_zero(grid_t *inGrid, int n) {
+Coordinate search_zero(grid_t inGrid, int n) {
     /*
      * Возвращает структуру типа Coordinate,
      * содержащий координаты нулевого элемента
-     * в сетке размера n * n по указателю inGrid.
+     * в сетке inGrid размера n * n.
      * (Предполагается, что нулевой элемент в матрице
      * есть)
      */
     Coordinate zero;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if(!(*inGrid)[i][j]) {
+            if(!inGrid[i][j]) {
                 zero.i = i;
                 zero.j = j;
                 return zero;
@@ -129,25 +112,25 @@ Coordinate search_zero(grid_t *inGrid, int n) {
     }
 }
 
-Grid *create_grid(grid_t *inGrid, int n) {
+Grid *create_grid(grid_t inGrid, int n) {
     /*
      * Возвращает указатель на структуру типа
      * Grid, расположенной в динамической памяти.
-     * Копирует сетку размера n * n, расположенной по
-     * указателю inGrid в соответсвующее поле структуры Grid.
-     * В поле zero записываются координаты нулевого
-     * элемента в сетке inGrid. В поле parent записывается
-     * NULL, т.к к эта сетка является начальной "позицией".
-     * В поля g и h записывает 0 и эвристическое расстояние
-     * до конечной позиции соответственно
+     * Копирует сетку inGrid размера n * n в соответсвующее
+     * поле структуры Grid. В поле zero записываются
+     * координаты нулевого элемента в сетке inGrid.
+     * В поле parent записывается NULL, т.к к эта сетка
+     * является начальной "позицией". В поля g и h записывает
+     * 0 и эвристическое расстояние до конечной позиции
+     * соответственно
      */
     Grid *retgrid = (Grid*)malloc(sizeof(Grid));
-    gridcpy(&(retgrid->grid), inGrid, n);
+    gridcpy(retgrid->grid, inGrid, n);
     retgrid->parent = NULL;
 
     retgrid->zero = search_zero(inGrid, n);
     retgrid->g = 0;
-    retgrid->f = calculate_manhattan_distance(&(retgrid->grid), n);
+    retgrid->f = calculate_manhattan_distance(retgrid->grid, n);
 
     retgrid->lastMove = -1;
 
@@ -156,24 +139,19 @@ Grid *create_grid(grid_t *inGrid, int n) {
 
 Grid *create_child(Grid *inGrid, int n, int move) {
     /*
-     * Возвращает указатель на структуру типа
-     * Grid, расположенной в динамической памяти.
-     * Копирует сетку размера n * n, расположенной по
-     * указателю inGrid в соответсвующее поле структуры Grid.
-     * Меняет позициями нулевой элемент сетки в соответствии с
-     * move (0 - с элементом, находящимся слева от нулевого,
-     * 1 - сверху, 2 - справа, 3 - снизу). Предполагается,
-     * что до вызова этой функции вызывается функция safe()
-     * В поле parent записывается указатель на сетку
-     * "родителя" - inGrid, из которой была получена
-     * "дочерняя" сетка. Для "дочерней" сетки
-     * считаются значения g и f (кол-во ходов до получения
-     * этой сетки и кол-во ходов вместе с эвристическим
-     * значением соответственно) и записываются в
-     * соответствующие позиции
+     * Возвращает указатель на структуру типа Grid, расположенной в
+     * динамической памяти. Копирует сетку размера n * n структуры inGrid
+     * в соответствующее поле структуры Grid. Меняет позициями нулевой элемент
+     * сетки в соответствии с move (0 - с элементом, находящимся слева от
+     * нулевого, 1 - сверху, 2 - справа, 3 - снизу). В поле parent записывается
+     * указатель на сетку "родителя" - inGrid, из которой была получена "дочерняя"
+     * сетка. Для "дочерней" сетки считаются значения g и f
+     * (кол-во ходов для получения этой сетки и кол-во ходов вместе с эвристическим
+     * значением соответственно) и записываются в соответствующие позиции возвращаемой
+     * структуры.
      */
     Grid *retgrid = (Grid*)malloc(sizeof(Grid));
-    gridcpy(&(retgrid->grid), &(inGrid->grid), n);
+    gridcpy(retgrid->grid, inGrid->grid, n);
     retgrid->parent = inGrid;
 
     retgrid->zero.i = inGrid->zero.i;
@@ -202,7 +180,7 @@ Grid *create_child(Grid *inGrid, int n, int move) {
     swap(&(retgrid->grid[i1][j1]), &(retgrid->grid[i2][j2]));
 
     retgrid->g = inGrid->g + 1;
-    retgrid->f = retgrid->g + calculate_manhattan_distance(&(retgrid->grid), n);
+    retgrid->f = retgrid->g + calculate_manhattan_distance(retgrid->grid, n);
 
     retgrid->lastMove = move;
 
@@ -212,20 +190,20 @@ Grid *create_child(Grid *inGrid, int n, int move) {
 void print_path(Grid *inGrid, int n, int *count) {
     /*
      * Выводит последовательность сеток размера n * n, которая
-     * привела к сетке того же размера, на которую указывает
-     * указатель inGrid того же размера, следуя
+     * привела к сетке inGrid того же размера, на которую указывает
+     * указатель inGrid, следуя
      * по родительским указателям
      */
     if (inGrid == NULL) {
         return;
     }
     print_path(inGrid->parent, n, count);
-    output_grid(&(inGrid->grid), n);
+    output_grid(inGrid->grid, n);
     num++;
     *count = num;
 }
 
-void print_sequence(Grid *inGrid, int n) {
+void print_sequence(Grid *inGrid) {
     /*
      * Выводит последовательность сеток размера n * n, которая
      * привела к сетке того же размера, на которую указывает
@@ -236,19 +214,19 @@ void print_sequence(Grid *inGrid, int n) {
         return;
     }
     char s[SIZE] = "LTRB";
-    print_sequence(inGrid->parent, n);
+    print_sequence(inGrid->parent);
     if (inGrid->lastMove != -1) {
         printf("%c ", s[inGrid->lastMove]);
     }
 }
 
-void get_grid_from_txt_file(char *f_name, grid_t *gr, int n) {
+void get_grid_from_txt_file(char *f_name, grid_t gr, int n) {
     /*
      * Считывает из текстового файла f_name целые числа,
-     * заполняет сетку размера n * n по указателю gr считанными
-     * из файла f_name данными. Если считать не получилось, либо
-     * данные представлены неверно - глобальной переменной ошибки
-     * присваивается 1
+     * заполняет сетку gr размера n * n считанными из файла f_name
+     * данными. Если считать не получилось, либо данные представлены
+     * неверно - глобальной переменной ошибки присваивается
+     * соответствующая ошибка.
      */
     int numbers_set[16] = {0}; // чтобы вводимые числа не повторялись
 
@@ -262,36 +240,39 @@ void get_grid_from_txt_file(char *f_name, grid_t *gr, int n) {
     int i = 0;
     int j = 0;
     int buff = 0;
+    int count = 0;
     while (!feof(f)) {
         if (fscanf(f, "%d", &buff) == 1) {
             if (!numbers_set[buff] && in_range(buff, n)) {
                 numbers_set[buff]++;
-                (*gr)[i][j] = buff;
+                count++;
+                gr[i][j] = buff;
                 j++;
                 if (j % n == 0) {
                     i++;
                     j = 0;
                 }
             } else {
-                error = 1;
+                error = REPEATING_NUMBER;
                 fclose(f);
                 return;
             }
-        } else {
-            error = 1;
-            fclose(f);
-            return;
         }
     }
 
+    if (count != n * n) {
+        error = NOT_ENOUGH_ELEMS;
+    }
     fclose(f);
 }
 
 int get_inverse_last_move(Grid *current) {
     /*
-     * Вовзращает ход, хранящий в поле
-     * lastMove структуры current, обратный
-     * ходу lastMove
+     * Вовзращает ход, обратный ходу lastMove,
+     * хранящийся в структуре current (например,
+     * lastMove = 1, это значит “вверх”, следовательно,
+     * обратный будет “вниз”, то есть программа вернет 3)
+     * lastMove для самого первого, начального узла равен -1
      */
     if (current->lastMove != -1) {
         if (current->lastMove < 2 && current->lastMove != -1) {
@@ -303,23 +284,26 @@ int get_inverse_last_move(Grid *current) {
     return 4;
 }
 
-void to_flat(grid_t *mattr, int *linearMattr, int n) {
+void to_flat(grid_t mattr, int *linearMattr, int n) {
+    /*
+     * Записывает матрицу mattr размера n * n в
+     * массив linearMattr размера n * n.
+     */
     int index = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            linearMattr[index] = (*mattr)[i][j];
+            linearMattr[index] = mattr[i][j];
             index++;
         }
     }
 }
 
-int solvable(grid_t *mattr, int n) {
+int solvable(grid_t mattr, int n) {
     /*
-     * Возвращает 1, если данный(ую) паззл (матрицу) (данную
-     * расстановку пятнашек) размера n * m можно собрать
-     * (решение есть), иначе - 0.
-     * zeroindex - индекс строки, в которой находится
-     * нуль
+     * Возращает 1, если данное расположение элементов в матрице mattr размера n * n
+     * можно привести к упорядоченному виду по возрастанию в направлениях “слева-направо”
+     * и “сверху-вниз”, перемещая каждый раз нулевой элемент в одну из соседних позиций.
+     * Иначе - 0.
      */
     int sum = 0;
     int zeroi = 0;

@@ -13,20 +13,22 @@ int main() {
     printf("Enter file name to get grid: ");
     char f_name[BUF];
     gets(f_name);
-    get_grid_from_txt_file(f_name, &mattr, n);
+    get_grid_from_txt_file(f_name, mattr, n);
 
     if (error) {
         printf("Reading error, incorrect input.\n");
+        printf("\nPress any key to exit...\n");
+        getchar();
         return -1;
     }
 
     printf("\n - - I N P U T T E D    M A T T R - - \n");
-    output_grid(&mattr, 4);
+    output_grid(mattr, 4);
 
-    if (solvable(&(mattr), n)) {
-        printf("\n***  YOUR SOLUTION (A*)  ***\n");
+    if (solvable(mattr, n)) {
+        printf("\n***  YOUR SOLUTION (IDA*)  ***\n");
         clock_t begin = clock();
-        solveIDAStar(&mattr, n);
+        solveIDAStar(mattr, n);
         clock_t end = clock();
         double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
         printf("\n\nTIME SPENT: %f", time_spent);
@@ -34,5 +36,8 @@ int main() {
         printf("No solutions.");
     }
 
+
+    printf("\nPress any key to exit...\n");
+    getchar();
     return 0;
 }

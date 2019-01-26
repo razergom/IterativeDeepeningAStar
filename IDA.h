@@ -7,6 +7,6 @@
 
 #include "Puzzle.h"
 
-void solveIDAStar(grid_t *gr, int n);
+void solveIDAStar(grid_t gr, int n);
 
 #endif //ITERATIVEDEEPINGASTAR_IDA_H
